@@ -1,0 +1,64 @@
+======================================================================
+          WEATHER DATA ANALYSIS AND TEMPERATURE PREDICTION REPORT
+======================================================================
+Date Generated: 2026-06-15 01:15:38
+Dataset File: london_weather_sample.csv
+Total Records: 365
+Total Columns: 7
+
+----------------------------------------------------------------------
+1. DATASET OVERVIEW
+----------------------------------------------------------------------
+Date Range: 2025-01-01 to 2025-12-31
+Detected Date Column: date
+Detected Target (Temp) Column: temperature
+Detected Humidity Column: humidity
+Detected Precipitation Column: precipitation
+Detected Wind Column: windspeed
+Detected Conditions Column: conditions
+
+----------------------------------------------------------------------
+2. WEATHER STATISTICS SUMMARY
+----------------------------------------------------------------------
+TEMPERATURE:
+  - Average Temperature: 10.76 °C
+  - Highest Temperature: 27.20 °C
+  - Lowest Temperature:  -5.40 °C
+
+HUMIDITY:
+  - Average Humidity:    79.62 %
+  - Highest Humidity:    100
+  - Lowest Humidity:     56
+
+RAINFALL:
+  - Total Rainfall:      571.25 mm
+  - Average Rainfall:    1.57 mm
+  - Maximum Rainfall:    24.45 mm
+
+WIND SPEED:
+  - Average Wind Speed:  5.01 m/s
+  - Maximum Wind Speed:  11.70 m/s
+
+WEATHER CONDITIONS:
+  - Most Common Condition:  Clear
+  - Least Common Condition: Heavy Rain
+
+----------------------------------------------------------------------
+3. MACHINE LEARNING RESULTS & PERFORMANCE
+----------------------------------------------------------------------
+Model Type: Linear Regression
+Target Variable: temperature
+Features Used: precipitation, windspeed, pressure
+Train/Test Samples: 292 / 73
+
+Model Coefficients:
+  - precipitation: -0.1527
+  - windspeed: -0.4109
+  - pressure: -0.0589
+  - Intercept: 72.8557
+
+Evaluation Metrics on Test Set:
+  - Mean Absolute Error (MAE):     6.4301 °C
+  - Mean Squared Error (MSE):      56.8383
+  - Root Mean Squared Error (RMSE): 7.5391 °C
+  - R² Score (R-squared):           -0.0293
