@@ -1,0 +1,76 @@
+======================================================================
+          WEATHER DATA ANALYSIS AND TEMPERATURE PREDICTION REPORT
+======================================================================
+Date Generated: 2026-06-15 02:11:46
+Dataset File: seoul_weather_2022_to_2024.csv
+Total Records: 731
+Total Columns: 33
+
+----------------------------------------------------------------------
+1. DATASET OVERVIEW
+----------------------------------------------------------------------
+Date Range: 2022-01-01 to 2024-01-01
+Detected Date Column: datetime
+Detected Target (Temp) Column: temp
+Detected Humidity Column: humidity
+Detected Precipitation Column: precip
+Detected Wind Column: windspeed
+Detected Conditions Column: conditions
+
+----------------------------------------------------------------------
+2. WEATHER STATISTICS SUMMARY
+----------------------------------------------------------------------
+TEMPERATURE:
+  - Average Temperature: 13.69 °C
+  - Highest Temperature: 31.10 °C
+  - Lowest Temperature:  -13.70 °C
+
+HUMIDITY:
+  - Average Humidity:    65.28 %
+  - Highest Humidity:    99.00 %
+  - Lowest Humidity:     22.00 %
+
+RAINFALL:
+  - Total Rainfall:      3178.11 mm
+  - Average Rainfall:    4.35 mm
+  - Maximum Rainfall:    268.62 mm
+
+WIND SPEED:
+  - Average Wind Speed:  14.37 m/s
+  - Maximum Wind Speed:  33.00 m/s
+
+WEATHER CONDITIONS:
+  - Most Common Condition:  Partially cloudy
+  - Least Common Condition: Snow, Overcast
+
+----------------------------------------------------------------------
+3. MACHINE LEARNING RESULTS & PERFORMANCE
+----------------------------------------------------------------------
+Model Type: Linear Regression
+Target Variable: temp
+Features Used: precip, precipprob, precipcover, snow, snowdepth, windgust, windspeed, winddir, sealevelpressure, cloudcover, visibility, solarradiation, solarenergy, severerisk, moonphase
+Train/Test Samples: 584 / 147
+
+Model Coefficients:
+  - precip: 0.0249
+  - precipprob: -0.0064
+  - precipcover: 0.0584
+  - snow: -0.3882
+  - snowdepth: -1.9296
+  - windgust: -0.0850
+  - windspeed: -0.2832
+  - winddir: -0.0090
+  - sealevelpressure: -0.7680
+  - cloudcover: 0.0496
+  - visibility: 0.1222
+  - solarradiation: 0.0473
+  - solarenergy: -0.1196
+  - severerisk: 0.0640
+  - moonphase: -1.0229
+  - Intercept: 790.6059
+
+Evaluation Metrics on Test Set:
+  - Mean Absolute Error (MAE):     4.1071 °C
+  - Mean Squared Error (MSE):      27.5747
+  - Root Mean Squared Error (RMSE): 5.2512 °C
+  - R² Score (R-squared):           0.7698
