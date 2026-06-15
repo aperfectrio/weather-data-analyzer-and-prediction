@@ -13,6 +13,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import seaborn as sns
 
+# ReportLab PDF Generation Imports
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak, KeepTogether
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+
 # Color Palette Definitions (Modern Slate/Indigo Dark Mode)
 DARK_BG = "#0f172a"        # Slate 900
 SIDEBAR_BG = "#1e293b"     # Slate 800
@@ -558,6 +565,294 @@ class WeatherDataProcessor:
             f.write(report_txt)
             
         return report_txt
+
+    def generate_pdf_report(self, output_path="output_report.pdf"):
+        """Generates detailed weather PDF report containing metrics and charts."""
+        if self.df is None:
+            raise ValueError("No dataset loaded.")
+        
+        # Make sure output directories are created
+        dir_name = os.path.dirname(output_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+            
+        # Make sure visualizations are generated and saved
+        self.save_all_visualizations("output")
+        if self.is_trained:
+            self.evaluate_model("output")
+            
+        stats = self.calculate_statistics()
+        
+        # Setup document
+        doc = SimpleDocTemplate(
+            output_path,
+            pagesize=letter,
+            rightMargin=0.5*inch,
+            leftMargin=0.5*inch,
+            topMargin=0.5*inch,
+            bottomMargin=0.5*inch
+        )
+        
+        PRIMARY_COLOR = colors.HexColor("#1e293b")
+        ACCENT_COLOR = colors.HexColor("#6366f1")
+        BG_LIGHT = colors.HexColor("#f8fafc")
+        BORDER_COLOR = colors.HexColor("#cbd5e1")
+        TEXT_COLOR = colors.HexColor("#0f172a")
+        SUBTEXT_COLOR = colors.HexColor("#475569")
+        
+        styles = getSampleStyleSheet()
+        
+        title_style = ParagraphStyle(
+            'ReportTitle',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=18,
+            textColor=PRIMARY_COLOR,
+            spaceAfter=6,
+            alignment=1 # Center
+        )
+        subtitle_style = ParagraphStyle(
+            'ReportSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            textColor=SUBTEXT_COLOR,
+            spaceAfter=12,
+            alignment=1
+        )
+        h1_style = ParagraphStyle(
+            'ReportH1',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=12,
+            textColor=ACCENT_COLOR,
+            spaceBefore=10,
+            spaceAfter=5
+        )
+        body_style = ParagraphStyle(
+            'ReportBody',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            textColor=TEXT_COLOR,
+            leading=13,
+            spaceAfter=4
+        )
+        body_bold = ParagraphStyle(
+            'ReportBodyBold',
+            parent=body_style,
+            fontName='Helvetica-Bold'
+        )
+        
+        def make_section_header(title_text):
+            t = Table([[Paragraph(f"<b>{title_text}</b>", ParagraphStyle('H1_Col', parent=h1_style, textColor=ACCENT_COLOR, fontSize=11))]], colWidths=[7.5*inch])
+            t.setStyle(TableStyle([
+                ('LINEBELOW', (0,0), (-1,-1), 1.5, ACCENT_COLOR),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+            ]))
+            return t
+            
+        story = []
+        
+        # Header banner
+        story.append(Paragraph("WEATHER DATA ANALYSIS &amp; TEMPERATURE PREDICTION REPORT", title_style))
+        story.append(Paragraph(f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Dataset: {self.file_name}", subtitle_style))
+        story.append(Spacer(1, 5))
+        
+        # 1. DATASET OVERVIEW
+        story.append(make_section_header("1. DATASET OVERVIEW"))
+        story.append(Spacer(1, 4))
+        
+        overview_text = f"This report presents a meteorological analysis of the dataset <b>{self.file_name}</b>. " \
+                        f"The dataset contains a total of <b>{len(self.df)}</b> records and <b>{len(self.columns)}</b> variables."
+        story.append(Paragraph(overview_text, body_style))
+        story.append(Spacer(1, 4))
+        
+        # Metadata / Mapping details in table
+        start_date_str = "N/A"
+        end_date_str = "N/A"
+        if self.date_col and not self.df[self.date_col].empty:
+            start_date_str = self.df[self.date_col].min().strftime('%Y-%m-%d')
+            end_date_str = self.df[self.date_col].max().strftime('%Y-%m-%d')
+            
+        mapping_data = [
+            [Paragraph("<b>Metric</b>", body_bold), Paragraph("<b>Value / Column Mapping</b>", body_bold)],
+            ["Date Range", f"{start_date_str} to {end_date_str}"],
+            ["Detected Date Column", self.date_col or "None"],
+            ["Target Variable (Temp)", self.temp_col or "None"],
+            ["Humidity Column", self.humidity_col or "None"],
+            ["Precipitation Column", self.precip_col or "None"],
+            ["Wind Speed Column", self.wind_col or "None"],
+            ["Conditions Column", self.conditions_col or "None"],
+        ]
+        
+        mapping_table = Table(mapping_data, colWidths=[3.25*inch, 4.25*inch])
+        mapping_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor("#0f172a")),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+            ('PADDING', (0, 0), (-1, -1), 3),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+        ]))
+        story.append(mapping_table)
+        story.append(Spacer(1, 8))
+        
+        # 2. WEATHER STATISTICS SUMMARY
+        story.append(make_section_header("2. WEATHER STATISTICS SUMMARY"))
+        story.append(Spacer(1, 4))
+        
+        stats_data = [
+            ["Weather Metric", "Average / Total Value", "Maximum Recorded", "Minimum Recorded"],
+            ["Temperature (°C)", 
+             f"{stats['temp']['avg']:.2f} °C" if isinstance(stats['temp']['avg'], float) else stats['temp']['avg'],
+             f"{stats['temp']['max']:.2f} °C" if isinstance(stats['temp']['max'], float) else stats['temp']['max'],
+             f"{stats['temp']['min']:.2f} °C" if isinstance(stats['temp']['min'], float) else stats['temp']['min']],
+            ["Humidity (%)", 
+             f"{stats['humidity']['avg']:.2f} %" if isinstance(stats['humidity']['avg'], float) else stats['humidity']['avg'],
+             f"{stats['humidity']['max']:.2f} %" if isinstance(stats['humidity']['max'], float) else stats['humidity']['max'],
+             f"{stats['humidity']['min']:.2f} %" if isinstance(stats['humidity']['min'], float) else stats['humidity']['min']],
+            ["Rainfall (mm)", 
+             f"{stats['rainfall']['avg']:.2f} mm (Avg)" if isinstance(stats['rainfall']['avg'], float) else stats['rainfall']['avg'],
+             f"{stats['rainfall']['max']:.2f} mm" if isinstance(stats['rainfall']['max'], float) else stats['rainfall']['max'],
+             f"{stats['rainfall']['total']:.2f} mm (Total)" if isinstance(stats['rainfall']['total'], float) else stats['rainfall']['total']],
+            ["Wind Speed (m/s)", 
+             f"{stats['wind']['avg']:.2f} m/s" if isinstance(stats['wind']['avg'], float) else stats['wind']['avg'],
+             f"{stats['wind']['max']:.2f} m/s" if isinstance(stats['wind']['max'], float) else stats['wind']['max'],
+             "N/A"],
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[2.25*inch, 2.0*inch, 1.625*inch, 1.625*inch])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_COLOR),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+            ('PADDING', (0, 0), (-1, -1), 4),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ]))
+        story.append(stats_table)
+        story.append(Spacer(1, 6))
+        
+        condition_text = f"<b>Weather Conditions:</b> Most Common Condition is <b>{stats['condition']['most_common']}</b>, " \
+                         f"and the Least Common Condition is <b>{stats['condition']['least_common']}</b>."
+        story.append(Paragraph(condition_text, body_style))
+        
+        # Page Break before charts
+        story.append(PageBreak())
+        
+        # 3. GRAPHICAL DATA ANALYSIS
+        story.append(make_section_header("3. GRAPHICAL DATA ANALYSIS"))
+        story.append(Spacer(1, 8))
+        
+        # Put charts side-by-side or stacked in tables to keep pages clean and properly sized.
+        charts = [
+            ("temperature_trend.png", "Figure 1: Chronological Temperature Trend"),
+            ("monthly_temperature.png", "Figure 2: Monthly Average Temperature"),
+            ("monthly_rainfall.png", "Figure 3: Monthly Rainfall Distribution"),
+            ("weather_conditions.png", "Figure 4: Weather Conditions Distribution"),
+            ("humidity_histogram.png", "Figure 5: Humidity Distribution Histogram"),
+            ("temp_vs_humidity.png", "Figure 6: Temperature vs Humidity Correlation"),
+            ("correlation_heatmap.png", "Figure 7: Feature Correlation Heatmap")
+        ]
+        
+        for idx in range(0, len(charts), 2):
+            chart_elements = []
+            
+            # First chart of the pair
+            c1_name, c1_title = charts[idx]
+            c1_path = os.path.join("output", c1_name)
+            if os.path.exists(c1_path):
+                img1 = Image(c1_path, width=5.5*inch, height=2.6*inch)
+                chart_elements.append(img1)
+                chart_elements.append(Paragraph(f"<font color='#475569'><i>{c1_title}</i></font>", ParagraphStyle('FigC1', parent=subtitle_style, spaceAfter=8)))
+            
+            # Second chart of the pair (if exists)
+            if idx + 1 < len(charts):
+                c2_name, c2_title = charts[idx+1]
+                c2_path = os.path.join("output", c2_name)
+                if os.path.exists(c2_path):
+                    img2 = Image(c2_path, width=5.5*inch, height=2.6*inch)
+                    chart_elements.append(img2)
+                    chart_elements.append(Paragraph(f"<font color='#475569'><i>{c2_title}</i></font>", ParagraphStyle('FigC2', parent=subtitle_style, spaceAfter=8)))
+            
+            if chart_elements:
+                story.extend(chart_elements)
+                if idx + 2 < len(charts):
+                    story.append(PageBreak())
+        
+        # Page break before machine learning results
+        story.append(PageBreak())
+        
+        # 4. MACHINE LEARNING RESULTS & PERFORMANCE
+        story.append(make_section_header("4. MACHINE LEARNING RESULTS & PERFORMANCE"))
+        story.append(Spacer(1, 4))
+        
+        if self.is_trained:
+            ml_intro = f"A <b>Linear Regression</b> model was trained to predict <b>{self.temp_col}</b> using the " \
+                       f"available numerical features. The dataset was split into <b>80% training set</b> " \
+                       f"({len(self.X_train)} samples) and <b>20% testing set</b> ({len(self.X_test)} samples)."
+            story.append(Paragraph(ml_intro, body_style))
+            story.append(Spacer(1, 4))
+            
+            # Metrics
+            metrics_data = [
+                [Paragraph("<b>Evaluation Metric</b>", body_bold), Paragraph("<b>Value</b>", body_bold), Paragraph("<b>Interpretation</b>", body_bold)],
+                ["Mean Absolute Error (MAE)", f"{self.metrics.get('mae', 0):.4f} °C", "Average magnitude of the errors in predictions."],
+                ["Mean Squared Error (MSE)", f"{self.metrics.get('mse', 0):.4f}", "Average squared difference between predicted and actual values."],
+                ["Root Mean Squared Error (RMSE)", f"{self.metrics.get('rmse', 0):.4f} °C", "Standard deviation of the residuals (prediction errors)."],
+                ["R² Score (R-squared)", f"{self.metrics.get('r2', 0):.4f}", "Proportion of target variance explained by the model features."],
+            ]
+            metrics_table = Table(metrics_data, colWidths=[2.5*inch, 1.25*inch, 3.75*inch])
+            metrics_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ('PADDING', (0, 0), (-1, -1), 4),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ]))
+            story.append(metrics_table)
+            story.append(Spacer(1, 8))
+            
+            # Model Coefficients
+            coef_data = [
+                [Paragraph("<b>Predictor Feature</b>", body_bold), Paragraph("<b>Coefficient</b>", body_bold), Paragraph("<b>Effect on Temperature</b>", body_bold)]
+            ]
+            for feat, coef in zip(self.model_features, self.model.coef_):
+                effect = "Positive relationship (Temp rises)" if coef >= 0 else "Negative relationship (Temp drops)"
+                coef_data.append([feat, f"{coef:.4f}", effect])
+                
+            coef_data.append(["[Intercept Constant]", f"{self.model.intercept_:.4f}", "Base temperature when all features are zero"])
+            
+            coef_table = Table(coef_data, colWidths=[2.5*inch, 1.25*inch, 3.75*inch])
+            coef_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f8fafc")),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ('PADDING', (0, 0), (-1, -1), 3),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ]))
+            
+            story.append(Paragraph("<b>Model Coefficients Summary:</b>", body_bold))
+            story.append(Spacer(1, 3))
+            story.append(coef_table)
+            story.append(Spacer(1, 8))
+            
+            # Actual vs Predicted validation plot
+            val_plot_path = os.path.join("output", "actual_vs_predicted.png")
+            if os.path.exists(val_plot_path):
+                img_val = Image(val_plot_path, width=5.5*inch, height=2.6*inch)
+                story.append(img_val)
+                story.append(Paragraph("<font color='#475569'><i>Figure 8: Actual vs Predicted Temperature on Test Set</i></font>", subtitle_style))
+        else:
+            story.append(Paragraph("<i>The prediction model was not trained before exporting this report. No machine learning metrics or predictions are available.</i>", body_style))
+            
+        doc.build(story)
+
 
 
 class ScrollableFrame(tk.Frame):
@@ -1537,14 +1832,31 @@ class WeatherApp:
         title = tk.Label(pane, text="Generate Analytical Weather Report", font=("Segoe UI", 18, "bold"), fg=TEXT_COLOR, bg=DARK_BG, anchor="w")
         title.pack(fill="x", pady=(10, 20))
         
-        # Save and generate text
+        # Save and generate text and PDF reports
         report_text = self.processor.generate_report()
-        self.update_status("Report Saved Successfully", "success")
+        pdf_success = True
+        try:
+            self.processor.generate_pdf_report("output_report.pdf")
+        except Exception as e:
+            pdf_success = False
+            print(f"Error generating PDF report: {e}")
+            
+        self.update_status("Reports Saved Successfully", "success")
         
         # Confirmation box
         conf_card = tk.Frame(pane, bg=CARD_BG, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=15, pady=15)
         conf_card.pack(fill="x", pady=(0, 20))
-        tk.Label(conf_card, text="✔ Report generated and saved to: output/weather_report.txt", font=("Segoe UI", 10, "bold"), fg=SUCCESS_COLOR, bg=CARD_BG, anchor="w").pack(fill="x")
+        
+        txt_msg = "✔ Text report generated and saved to: output/weather_report.txt"
+        tk.Label(conf_card, text=txt_msg, font=("Segoe UI", 10, "bold"), fg=SUCCESS_COLOR, bg=CARD_BG, anchor="w").pack(fill="x", pady=(0, 5))
+        
+        if pdf_success:
+            pdf_msg = "✔ PDF report generated and saved to: output_report.pdf"
+            pdf_color = SUCCESS_COLOR
+        else:
+            pdf_msg = "⚠ Failed to generate PDF report (check application console)"
+            pdf_color = WARNING_COLOR
+        tk.Label(conf_card, text=pdf_msg, font=("Segoe UI", 10, "bold"), fg=pdf_color, bg=CARD_BG, anchor="w").pack(fill="x")
         
         # Displays in scrollable read-only text field
         text_frame = tk.Frame(pane, bg=CARD_BG, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=10, pady=10)
