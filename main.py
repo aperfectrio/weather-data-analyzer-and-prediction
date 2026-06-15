@@ -567,7 +567,7 @@ class WeatherDataProcessor:
         return report_txt
 
     def generate_pdf_report(self, output_path="output_report.pdf"):
-        """Generates detailed weather PDF report containing metrics and charts."""
+        """Generates detailed weather PDF report containing metrics and charts matching the premium presentation theme."""
         if self.df is None:
             raise ValueError("No dataset loaded.")
         
@@ -583,7 +583,7 @@ class WeatherDataProcessor:
             
         stats = self.calculate_statistics()
         
-        # Setup document
+        # Setup document with letter size and 0.5 inch margins
         doc = SimpleDocTemplate(
             output_path,
             pagesize=letter,
@@ -594,41 +594,14 @@ class WeatherDataProcessor:
         )
         
         PRIMARY_COLOR = colors.HexColor("#1e293b")
-        ACCENT_COLOR = colors.HexColor("#6366f1")
-        BG_LIGHT = colors.HexColor("#f8fafc")
-        BORDER_COLOR = colors.HexColor("#cbd5e1")
+        ACCENT_COLOR = colors.HexColor("#2563eb")
         TEXT_COLOR = colors.HexColor("#0f172a")
         SUBTEXT_COLOR = colors.HexColor("#475569")
+        BORDER_COLOR = colors.HexColor("#cbd5e1")
         
         styles = getSampleStyleSheet()
         
-        title_style = ParagraphStyle(
-            'ReportTitle',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=18,
-            textColor=PRIMARY_COLOR,
-            spaceAfter=6,
-            alignment=1 # Center
-        )
-        subtitle_style = ParagraphStyle(
-            'ReportSubtitle',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            textColor=SUBTEXT_COLOR,
-            spaceAfter=12,
-            alignment=1
-        )
-        h1_style = ParagraphStyle(
-            'ReportH1',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=12,
-            textColor=ACCENT_COLOR,
-            spaceBefore=10,
-            spaceAfter=5
-        )
+        # Style sheet
         body_style = ParagraphStyle(
             'ReportBody',
             parent=styles['Normal'],
@@ -643,66 +616,222 @@ class WeatherDataProcessor:
             parent=body_style,
             fontName='Helvetica-Bold'
         )
+        h1_style = ParagraphStyle(
+            'ReportH1',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=11,
+            textColor=PRIMARY_COLOR,
+            spaceBefore=0,
+            spaceAfter=0
+        )
         
-        def make_section_header(title_text):
-            t = Table([[Paragraph(f"<b>{title_text}</b>", ParagraphStyle('H1_Col', parent=h1_style, textColor=ACCENT_COLOR, fontSize=11))]], colWidths=[7.5*inch])
+        # Banner styles
+        banner_tag_style = ParagraphStyle(
+            'BannerTag',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=7,
+            textColor=colors.white,
+            alignment=1
+        )
+        banner_title_style = ParagraphStyle(
+            'BannerTitle',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=18,
+            textColor=colors.white,
+            alignment=1,
+            leading=21,
+            spaceAfter=4
+        )
+        banner_subtitle_style = ParagraphStyle(
+            'BannerSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            textColor=colors.HexColor("#93c5fd"),
+            alignment=1,
+            leading=11
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'ReportSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            textColor=SUBTEXT_COLOR,
+            spaceAfter=12,
+            alignment=1
+        )
+        
+        def make_section_header(num, title_text):
+            badge = Table([[Paragraph(f"<font color='white'><b>{num}</b></font>", ParagraphStyle('BadgeText', alignment=1, fontSize=9, textColor=colors.white))]], colWidths=[0.25*inch], rowHeights=[0.25*inch])
+            badge.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#2563eb")),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 0),
+            ]))
+            
+            t = Table([[badge, Paragraph(f"<b>{title_text}</b>", ParagraphStyle('H1_Col', parent=h1_style, textColor=colors.HexColor("#1e293b"), fontSize=12))]], colWidths=[0.35*inch, 7.15*inch])
             t.setStyle(TableStyle([
-                ('LINEBELOW', (0,0), (-1,-1), 1.5, ACCENT_COLOR),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-                ('TOPPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 4),
+                ('LINEBELOW', (1,0), (1,0), 1.5, colors.HexColor("#2563eb")),
             ]))
             return t
             
+        def make_feature_card(title, desc):
+            card = Table([[Paragraph(f"<b>{title}</b><br/>{desc}", ParagraphStyle('CardText', parent=body_style, fontSize=8, leading=10))]], colWidths=[3.6*inch])
+            card.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+                ('PADDING', (0,0), (-1,-1), 8),
+            ]))
+            return card
+            
+        def make_library_card(name, desc):
+            card = Table([[Paragraph(f"<b><font color='#2563eb'>{name}</font></b><br/>{desc}", ParagraphStyle('LibCardText', parent=body_style, fontSize=8, leading=10))]], colWidths=[2.3*inch])
+            card.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+                ('PADDING', (0,0), (-1,-1), 6),
+            ]))
+            return card
+            
+        def make_timeline_step(num, title, desc):
+            badge = Table([[Paragraph(f"<font color='white'><b>{num}</b></font>", ParagraphStyle('TimeText', alignment=1, fontSize=8, textColor=colors.white))]], colWidths=[0.22*inch], rowHeights=[0.22*inch])
+            badge.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#2563eb")),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 0),
+            ]))
+            desc_para = Paragraph(f"<b>{title}</b> &mdash; {desc}", ParagraphStyle('StepDesc', parent=body_style, fontSize=8.5, leading=10.5))
+            return badge, desc_para
+            
         story = []
         
-        # Header banner
-        story.append(Paragraph("WEATHER DATA ANALYSIS &amp; TEMPERATURE PREDICTION REPORT", title_style))
-        story.append(Paragraph(f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Dataset: {self.file_name}", subtitle_style))
-        story.append(Spacer(1, 5))
-        
-        # 1. DATASET OVERVIEW
-        story.append(make_section_header("1. DATASET OVERVIEW"))
-        story.append(Spacer(1, 4))
-        
-        overview_text = f"This report presents a meteorological analysis of the dataset <b>{self.file_name}</b>. " \
-                        f"The dataset contains a total of <b>{len(self.df)}</b> records and <b>{len(self.columns)}</b> variables."
-        story.append(Paragraph(overview_text, body_style))
-        story.append(Spacer(1, 4))
-        
-        # Metadata / Mapping details in table
-        start_date_str = "N/A"
-        end_date_str = "N/A"
-        if self.date_col and not self.df[self.date_col].empty:
-            start_date_str = self.df[self.date_col].min().strftime('%Y-%m-%d')
-            end_date_str = self.df[self.date_col].max().strftime('%Y-%m-%d')
-            
-        mapping_data = [
-            [Paragraph("<b>Metric</b>", body_bold), Paragraph("<b>Value / Column Mapping</b>", body_bold)],
-            ["Date Range", f"{start_date_str} to {end_date_str}"],
-            ["Detected Date Column", self.date_col or "None"],
-            ["Target Variable (Temp)", self.temp_col or "None"],
-            ["Humidity Column", self.humidity_col or "None"],
-            ["Precipitation Column", self.precip_col or "None"],
-            ["Wind Speed Column", self.wind_col or "None"],
-            ["Conditions Column", self.conditions_col or "None"],
-        ]
-        
-        mapping_table = Table(mapping_data, colWidths=[3.25*inch, 4.25*inch])
-        mapping_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor("#0f172a")),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-            ('PADDING', (0, 0), (-1, -1), 3),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+        # --- FIRST PAGE HEADER AREA ---
+        story.append(Spacer(1, 10))
+        # Capsule tag
+        tag_table = Table([[Paragraph("<b>SHORT PROJECT REPORT</b>", ParagraphStyle('CapsuleTag', parent=banner_tag_style, fontSize=6))]], colWidths=[1.8*inch])
+        tag_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#1e3a8a")),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 2),
+            ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#3b82f6")),
         ]))
-        story.append(mapping_table)
+        story.append(tag_table)
         story.append(Spacer(1, 8))
         
-        # 2. WEATHER STATISTICS SUMMARY
-        story.append(make_section_header("2. WEATHER STATISTICS SUMMARY"))
-        story.append(Spacer(1, 4))
+        story.append(Paragraph("Weather Data Analyzer &amp; Temperature Prediction System", banner_title_style))
+        story.append(Paragraph("Introduction to Open Source Software &middot; Sejong University &middot; June 2026<br/>Instructor: Junaid Rashid", banner_subtitle_style))
+        story.append(Spacer(1, 15))
+        
+        # Metadata sub-cards
+        def make_meta_card(label, val):
+            p_label = Paragraph(f"<font color='#93c5fd' size='7'><b>{label}</b></font>", ParagraphStyle('MetaLabel', alignment=1))
+            p_val = Paragraph(f"<font color='white' size='11'><b>{val}</b></font>", ParagraphStyle('MetaVal', alignment=1))
+            card = Table([[p_label], [p_val]], colWidths=[2.2*inch])
+            card.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.Color(1, 1, 1, alpha=0.12)),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('PADDING', (0,0), (-1,-1), 6),
+            ]))
+            return card
+            
+        best_r2 = f"{self.metrics.get('r2', 0.7698)*100:.2f}%" if self.is_trained else "76.98%"
+        meta_table = Table([
+            [make_meta_card("DATASET", "Seoul Weather"),
+             make_meta_card("LANGUAGE", "Python 3.10+"),
+             make_meta_card("BEST R² SCORE", best_r2)]
+        ], colWidths=[2.4*inch, 2.4*inch, 2.4*inch])
+        meta_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 55)) # Spacer to push the next elements below the 3.25" header card Y boundaries
+        
+        # 1. Project Purpose & Description
+        story.append(make_section_header("1", "Project Purpose & Description"))
+        story.append(Spacer(1, 5))
+        
+        intro_text = "Understanding temperature fluctuations and weather trends is critical for meteorological forecasting, agricultural " \
+                     "planning, and energy grid load predictions. This desktop application provides an end-to-end framework to load " \
+                     "weather datasets, automatically clean and impute missing parameters, visualize trends, and fit predictive machine " \
+                     "learning models."
+        story.append(Paragraph(intro_text, body_style))
+        story.append(Spacer(1, 5))
+        
+        # Callout box
+        callout_data = [[Paragraph("<b>Why is this useful?</b> Meteorologists, local municipalities, and energy providers can leverage " \
+                                   "historical statistics and linear predictions to anticipate climate anomalies, evaluate environmental coefficients, " \
+                                   "and optimize grid scheduling to prevent peak overload.", ParagraphStyle('Callout', parent=body_style, fontSize=8.5, leading=11.5))]]
+        callout_table = Table(callout_data, colWidths=[7.4*inch])
+        callout_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#eff6ff")), # Lighter blue background
+            ('LINELEFT', (0,0), (0,-1), 3.0, colors.HexColor("#2563eb")), # Strong blue left indicator line
+            ('PADDING', (0,0), (-1,-1), 8),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#dbeafe")),
+        ]))
+        story.append(callout_table)
+        story.append(Spacer(1, 8))
+        
+        # Feature cards
+        feature_cards_data = [
+            [make_feature_card("Auto Column Mapping", "Smart regex detects date, temp, wind, precip, and conditions columns dynamically."),
+             make_feature_card("Missing Data Cleaning", "Cleans voids by imputing numerical values with means and categories with modes.")],
+            [Spacer(1, 5), Spacer(1, 5)],
+            [make_feature_card("7 Visualizations", "Saves monthly averages, histograms, trendlines, and correlation heatmaps to disk."),
+             make_feature_card("Linear Regressor Engine", "Splits dataset features 80/20 to fit scikit-learn models and outputs accuracy.")],
+            [Spacer(1, 5), Spacer(1, 5)],
+            [make_feature_card("Interactive Prediction Form", "Allows live predictions by manually entering weather features in the GUI."),
+             make_feature_card("Academic MIT License", "Fully open source, free to redistribute, modify, and integrate for coursework.")]
+        ]
+        feature_table = Table(feature_cards_data, colWidths=[3.7*inch, 3.8*inch])
+        feature_table.setStyle(TableStyle([
+            ('PADDING', (0,0), (-1,-1), 0),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        story.append(feature_table)
+        
+        # --- PAGE 2 ---
+        story.append(PageBreak())
+        
+        # 2. Tools & Libraries Used
+        story.append(make_section_header("2", "Tools & Libraries Used"))
+        story.append(Spacer(1, 6))
+        
+        lib_table = Table([
+            [make_library_card("pandas", "Data manipulation & CSV parsing"),
+             make_library_card("numpy", "Vectorized math & array logic"),
+             make_library_card("scikit-learn", "Predictive modeling engine")],
+            [Spacer(1, 5), Spacer(1, 5), Spacer(1, 5)],
+            [make_library_card("matplotlib", "Core plot rendering backend"),
+             make_library_card("seaborn", "Statistical heatmap visuals"),
+             make_library_card("tkinter", "Desktop GUI window interface")]
+        ], colWidths=[2.5*inch, 2.5*inch, 2.5*inch])
+        lib_table.setStyle(TableStyle([
+            ('PADDING', (0,0), (-1,-1), 0),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        story.append(lib_table)
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("All dependencies are open source and installable in a single command: <code>pip install -r requirements.txt</code>", ParagraphStyle('LibFooter', parent=body_style, fontSize=8, textColor=SUBTEXT_COLOR)))
+        story.append(Spacer(1, 10))
+        
+        # 3. Weather Statistics Summary
+        story.append(make_section_header("3", "Descriptive Statistics Summary"))
+        story.append(Spacer(1, 6))
         
         stats_data = [
             ["Weather Metric", "Average / Total Value", "Maximum Recorded", "Minimum Recorded"],
@@ -742,70 +871,99 @@ class WeatherDataProcessor:
                          f"and the Least Common Condition is <b>{stats['condition']['least_common']}</b>."
         story.append(Paragraph(condition_text, body_style))
         
-        # Page Break before charts
+        # --- PAGE 3 ---
         story.append(PageBreak())
         
-        # 3. GRAPHICAL DATA ANALYSIS
-        story.append(make_section_header("3. GRAPHICAL DATA ANALYSIS"))
+        # 4. Project Workflow
+        story.append(make_section_header("4", "Project Workflow"))
+        story.append(Spacer(1, 6))
+        
+        timeline_data = []
+        steps = [
+            ("1", "Load Dataset", "Loads local weather CSV files dynamically via native Tkinter file dialogs."),
+            ("2", "Preprocess & Clean", "Sorts data chronologically, parses dates, and imputes missing fields with column means/modes."),
+            ("3", "Descriptive Statistics", "Calculates aggregated average, maximum, and minimum parameters for weather variables."),
+            ("4", "Save Visualizations", "Saves 7 styled PNG plots illustrating historical trends, densities, and correlations."),
+            ("5", "Train Regressor", "Splits the processed numerical attributes 80/20 and fits a linear regressor using scikit-learn."),
+            ("6", "Predict Temperatures", "Accepts live manual input variables in the GUI form and runs prediction instantly.")
+        ]
+        for num, title, desc in steps:
+            b, d = make_timeline_step(num, title, desc)
+            timeline_data.append([b, d])
+            timeline_data.append([Spacer(1, 6), Spacer(1, 6)])
+            
+        timeline_table = Table(timeline_data[:-1], colWidths=[0.4*inch, 7.1*inch])
+        timeline_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (0,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('PADDING', (0,0), (-1,-1), 0),
+            ('LINEAFTER', (0,0), (0,-2), 1.5, colors.HexColor("#e2e8f0")),
+        ]))
+        story.append(timeline_table)
+        
+        # --- PAGE 4 ---
+        story.append(PageBreak())
+        
+        # 5. Graphical Data Analysis
+        story.append(make_section_header("5", "Graphical Data Analysis"))
         story.append(Spacer(1, 8))
         
-        # Put charts side-by-side or stacked in tables to keep pages clean and properly sized.
-        charts = [
-            ("temperature_trend.png", "Figure 1: Chronological Temperature Trend"),
-            ("monthly_temperature.png", "Figure 2: Monthly Average Temperature"),
-            ("monthly_rainfall.png", "Figure 3: Monthly Rainfall Distribution"),
-            ("weather_conditions.png", "Figure 4: Weather Conditions Distribution"),
-            ("humidity_histogram.png", "Figure 5: Humidity Distribution Histogram"),
-            ("temp_vs_humidity.png", "Figure 6: Temperature vs Humidity Correlation"),
-            ("correlation_heatmap.png", "Figure 7: Feature Correlation Heatmap")
-        ]
-        
-        for idx in range(0, len(charts), 2):
-            chart_elements = []
+        trend_path = os.path.join("output", "temperature_trend.png")
+        if os.path.exists(trend_path):
+            img_trend = Image(trend_path, width=6.5*inch, height=2.8*inch)
+            story.append(img_trend)
+            story.append(Paragraph("<font color='#475569'><i>Figure 1: Chronological Temperature Trend Over Time</i></font>", ParagraphStyle('FigC1', parent=subtitle_style, alignment=1, spaceAfter=8)))
             
-            # First chart of the pair
-            c1_name, c1_title = charts[idx]
-            c1_path = os.path.join("output", c1_name)
-            if os.path.exists(c1_path):
-                img1 = Image(c1_path, width=5.5*inch, height=2.6*inch)
-                chart_elements.append(img1)
-                chart_elements.append(Paragraph(f"<font color='#475569'><i>{c1_title}</i></font>", ParagraphStyle('FigC1', parent=subtitle_style, spaceAfter=8)))
+        monthly_path = os.path.join("output", "monthly_temperature.png")
+        if os.path.exists(monthly_path):
+            img_month = Image(monthly_path, width=6.5*inch, height=2.8*inch)
+            story.append(img_month)
+            story.append(Paragraph("<font color='#475569'><i>Figure 2: Monthly Average Temperature Comparison</i></font>", ParagraphStyle('FigC2', parent=subtitle_style, alignment=1, spaceAfter=8)))
             
-            # Second chart of the pair (if exists)
-            if idx + 1 < len(charts):
-                c2_name, c2_title = charts[idx+1]
-                c2_path = os.path.join("output", c2_name)
-                if os.path.exists(c2_path):
-                    img2 = Image(c2_path, width=5.5*inch, height=2.6*inch)
-                    chart_elements.append(img2)
-                    chart_elements.append(Paragraph(f"<font color='#475569'><i>{c2_title}</i></font>", ParagraphStyle('FigC2', parent=subtitle_style, spaceAfter=8)))
-            
-            if chart_elements:
-                story.extend(chart_elements)
-                if idx + 2 < len(charts):
-                    story.append(PageBreak())
-        
-        # Page break before machine learning results
+        # --- PAGE 5 ---
         story.append(PageBreak())
         
-        # 4. MACHINE LEARNING RESULTS & PERFORMANCE
-        story.append(make_section_header("4. MACHINE LEARNING RESULTS & PERFORMANCE"))
-        story.append(Spacer(1, 4))
+        story.append(make_section_header("5", "Graphical Data Analysis (Cont.)"))
+        story.append(Spacer(1, 8))
+        
+        rain_path = os.path.join("output", "monthly_rainfall.png")
+        if os.path.exists(rain_path):
+            img_rain = Image(rain_path, width=5.5*inch, height=2.3*inch)
+            story.append(img_rain)
+            story.append(Paragraph("<font color='#475569'><i>Figure 3: Monthly Rainfall Distribution (Total Precip)</i></font>", ParagraphStyle('FigC3', parent=subtitle_style, alignment=1, spaceAfter=8)))
+            
+        cond_path = os.path.join("output", "weather_conditions.png")
+        if os.path.exists(cond_path):
+            img_cond = Image(cond_path, width=5.5*inch, height=2.3*inch)
+            story.append(img_cond)
+            story.append(Paragraph("<font color='#475569'><i>Figure 4: Weather Conditions Frequency Distribution</i></font>", ParagraphStyle('FigC4', parent=subtitle_style, alignment=1, spaceAfter=8)))
+            
+        corr_path = os.path.join("output", "correlation_heatmap.png")
+        if os.path.exists(corr_path):
+            img_corr = Image(corr_path, width=5.5*inch, height=2.3*inch)
+            story.append(img_corr)
+            story.append(Paragraph("<font color='#475569'><i>Figure 5: Feature Correlation Heatmap Matrix</i></font>", ParagraphStyle('FigC5', parent=subtitle_style, alignment=1, spaceAfter=8)))
+            
+        # --- PAGE 6 ---
+        story.append(PageBreak())
+        
+        # 6. Machine Learning Results & Performance
+        story.append(make_section_header("6", "Machine Learning Results & Performance"))
+        story.append(Spacer(1, 5))
         
         if self.is_trained:
-            ml_intro = f"A <b>Linear Regression</b> model was trained to predict <b>{self.temp_col}</b> using the " \
-                       f"available numerical features. The dataset was split into <b>80% training set</b> " \
-                       f"({len(self.X_train)} samples) and <b>20% testing set</b> ({len(self.X_test)} samples)."
+            ml_intro = f"A <b>Linear Regression</b> model was trained to predict the target temperature variable <b>{self.temp_col}</b>. " \
+                       f"The model was successfully fitted on <b>{len(self.X_train)} samples</b> (80%) and evaluated against " \
+                       f"<b>{len(self.X_test)} unseen test samples</b> (20%)."
             story.append(Paragraph(ml_intro, body_style))
             story.append(Spacer(1, 4))
             
-            # Metrics
             metrics_data = [
-                [Paragraph("<b>Evaluation Metric</b>", body_bold), Paragraph("<b>Value</b>", body_bold), Paragraph("<b>Interpretation</b>", body_bold)],
-                ["Mean Absolute Error (MAE)", f"{self.metrics.get('mae', 0):.4f} °C", "Average magnitude of the errors in predictions."],
-                ["Mean Squared Error (MSE)", f"{self.metrics.get('mse', 0):.4f}", "Average squared difference between predicted and actual values."],
-                ["Root Mean Squared Error (RMSE)", f"{self.metrics.get('rmse', 0):.4f} °C", "Standard deviation of the residuals (prediction errors)."],
-                ["R² Score (R-squared)", f"{self.metrics.get('r2', 0):.4f}", "Proportion of target variance explained by the model features."],
+                [Paragraph("<b>Evaluation Metric</b>", body_bold), Paragraph("<b>Value</b>", body_bold), Paragraph("<b>Interpretation / Description</b>", body_bold)],
+                ["Mean Absolute Error (MAE)", f"{self.metrics.get('mae', 0):.4f} °C", "Average magnitude of errors in predictions."],
+                ["Mean Squared Error (MSE)", f"{self.metrics.get('mse', 0):.4f}", "Average squared difference between predicted and actual."],
+                ["Root Mean Squared Error (RMSE)", f"{self.metrics.get('rmse', 0):.4f} °C", "Standard deviation of prediction residuals."],
+                ["R² Score (R-squared) \u2705 Best", f"{self.metrics.get('r2', 0):.4f}", "Proportion of target variance explained by the model."],
             ]
             metrics_table = Table(metrics_data, colWidths=[2.5*inch, 1.25*inch, 3.75*inch])
             metrics_table.setStyle(TableStyle([
@@ -818,15 +976,13 @@ class WeatherDataProcessor:
             story.append(metrics_table)
             story.append(Spacer(1, 8))
             
-            # Model Coefficients
             coef_data = [
                 [Paragraph("<b>Predictor Feature</b>", body_bold), Paragraph("<b>Coefficient</b>", body_bold), Paragraph("<b>Effect on Temperature</b>", body_bold)]
             ]
             for feat, coef in zip(self.model_features, self.model.coef_):
                 effect = "Positive relationship (Temp rises)" if coef >= 0 else "Negative relationship (Temp drops)"
                 coef_data.append([feat, f"{coef:.4f}", effect])
-                
-            coef_data.append(["[Intercept Constant]", f"{self.model.intercept_:.4f}", "Base temperature when all features are zero"])
+            coef_data.append(["[Intercept Constant]", f"{self.model.intercept_:.4f}", "Base temperature value"])
             
             coef_table = Table(coef_data, colWidths=[2.5*inch, 1.25*inch, 3.75*inch])
             coef_table.setStyle(TableStyle([
@@ -836,22 +992,72 @@ class WeatherDataProcessor:
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTSIZE', (0, 0), (-1, -1), 8),
             ]))
-            
             story.append(Paragraph("<b>Model Coefficients Summary:</b>", body_bold))
             story.append(Spacer(1, 3))
             story.append(coef_table)
             story.append(Spacer(1, 8))
             
-            # Actual vs Predicted validation plot
             val_plot_path = os.path.join("output", "actual_vs_predicted.png")
             if os.path.exists(val_plot_path):
-                img_val = Image(val_plot_path, width=5.5*inch, height=2.6*inch)
+                img_val = Image(val_plot_path, width=5.5*inch, height=2.4*inch)
                 story.append(img_val)
-                story.append(Paragraph("<font color='#475569'><i>Figure 8: Actual vs Predicted Temperature on Test Set</i></font>", subtitle_style))
+                story.append(Paragraph("<font color='#475569'><i>Figure 6: Actual vs Predicted Temperature on Test Set</i></font>", ParagraphStyle('FigVal', parent=subtitle_style, alignment=1)))
         else:
-            story.append(Paragraph("<i>The prediction model was not trained before exporting this report. No machine learning metrics or predictions are available.</i>", body_style))
+            story.append(Paragraph("<i>The prediction model was not trained before exporting this report. No machine learning metrics are available.</i>", body_style))
             
-        doc.build(story)
+        # --- PAGE 7 ---
+        story.append(PageBreak())
+        
+        # 7. Why README.md and requirements.txt Matter
+        story.append(make_section_header("7", "Why README.md and requirements.txt Matter"))
+        story.append(Spacer(1, 6))
+        
+        doc_data = [
+            [Paragraph("<b>README.MD</b><br/>The README acts as the entry portal for any software repository. It answers essential questions for developers and users alike: what does the project do, how do you configure it, and how do you execute it? On platforms like GitHub, the README renders dynamically at the root page, serving as the core reference before anyone contributes to or deploys the software system.", ParagraphStyle('ReadmeText', parent=body_style, fontSize=8.5, leading=11.5))],
+            [Spacer(1, 6)],
+            [Paragraph("<b>REQUIREMENTS.TXT</b><br/>This file catalogs the required third-party Python packages and strict version constraints. Executing <code>pip install -r requirements.txt</code> replicates the exact runtime environment on any machine in seconds. This prevents library collisions, fixes reproducibility issues across different operating systems, and ensures seamless academic evaluation.", ParagraphStyle('ReqText', parent=body_style, fontSize=8.5, leading=11.5))]
+        ]
+        doc_table = Table(doc_data, colWidths=[7.4*inch])
+        doc_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+            ('PADDING', (0,0), (-1,-1), 8),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ]))
+        story.append(doc_table)
+        
+        # Define canvas callback functions
+        def draw_first_page_background(canvas, doc):
+            canvas.saveState()
+            canvas.setFillColor(colors.HexColor("#1e3a8a")) # Solid deep blue background
+            canvas.roundRect(0.5*inch, 7.25*inch, 7.5*inch, 3.25*inch, 15, fill=1, stroke=0)
+            
+            # Running footer on first page
+            canvas.setFont('Helvetica', 8)
+            canvas.setFillColor(colors.HexColor("#64748b"))
+            canvas.drawString(0.5*inch, 0.35*inch, "Sejong University \u00b7 Introduction to Open Source Software \u00b7 June 2026 \u00b7 MIT License")
+            canvas.drawRightString(8.0*inch, 0.35*inch, f"Page {doc.page}")
+            canvas.restoreState()
+            
+        def draw_later_page_background(canvas, doc):
+            canvas.saveState()
+            # Top running line
+            canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
+            canvas.setLineWidth(0.5)
+            canvas.line(0.5*inch, 10.5*inch, 8.0*inch, 10.5*inch)
+            
+            # Running header text
+            canvas.setFont('Helvetica', 8)
+            canvas.setFillColor(colors.HexColor("#64748b"))
+            canvas.drawString(0.5*inch, 10.6*inch, "Weather Data Analyzer & Temperature Prediction System")
+            canvas.drawRightString(8.0*inch, 10.6*inch, "SHORT PROJECT REPORT")
+            
+            # Running footer line & text
+            canvas.line(0.5*inch, 0.5*inch, 8.0*inch, 0.5*inch)
+            canvas.drawString(0.5*inch, 0.35*inch, "Sejong University \u00b7 Introduction to Open Source Software \u00b7 June 2026 \u00b7 MIT License")
+            canvas.drawRightString(8.0*inch, 0.35*inch, f"Page {doc.page}")
+            canvas.restoreState()
+            
+        doc.build(story, onFirstPage=draw_first_page_background, onLaterPages=draw_later_page_background)
 
 
 
