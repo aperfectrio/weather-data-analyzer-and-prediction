@@ -1,19 +1,19 @@
 ======================================================================
           WEATHER DATA ANALYSIS AND TEMPERATURE PREDICTION REPORT
 ======================================================================
-Date Generated: 2026-06-15 02:11:46
-Dataset File: seoul_weather_2022_to_2024.csv
-Total Records: 731
-Total Columns: 33
+Date Generated: 2026-06-17 19:24:44
+Dataset File: london_weather_sample.csv
+Total Records: 365
+Total Columns: 7
 
 ----------------------------------------------------------------------
 1. DATASET OVERVIEW
 ----------------------------------------------------------------------
-Date Range: 2022-01-01 to 2024-01-01
-Detected Date Column: datetime
-Detected Target (Temp) Column: temp
+Date Range: 2025-01-01 to 2025-12-31
+Detected Date Column: date
+Detected Target (Temp) Column: temperature
 Detected Humidity Column: humidity
-Detected Precipitation Column: precip
+Detected Precipitation Column: precipitation
 Detected Wind Column: windspeed
 Detected Conditions Column: conditions
 
@@ -21,56 +21,44 @@ Detected Conditions Column: conditions
 2. WEATHER STATISTICS SUMMARY
 ----------------------------------------------------------------------
 TEMPERATURE:
-  - Average Temperature: 13.69 °C
-  - Highest Temperature: 31.10 °C
-  - Lowest Temperature:  -13.70 °C
+  - Average Temperature: 10.76 °C
+  - Highest Temperature: 27.20 °C
+  - Lowest Temperature:  -5.40 °C
 
 HUMIDITY:
-  - Average Humidity:    65.28 %
-  - Highest Humidity:    99.00 %
-  - Lowest Humidity:     22.00 %
+  - Average Humidity:    79.62 %
+  - Highest Humidity:    100
+  - Lowest Humidity:     56
 
 RAINFALL:
-  - Total Rainfall:      3178.11 mm
-  - Average Rainfall:    4.35 mm
-  - Maximum Rainfall:    268.62 mm
+  - Total Rainfall:      571.25 mm
+  - Average Rainfall:    1.57 mm
+  - Maximum Rainfall:    24.45 mm
 
 WIND SPEED:
-  - Average Wind Speed:  14.37 m/s
-  - Maximum Wind Speed:  33.00 m/s
+  - Average Wind Speed:  5.01 m/s
+  - Maximum Wind Speed:  11.70 m/s
 
 WEATHER CONDITIONS:
-  - Most Common Condition:  Partially cloudy
-  - Least Common Condition: Snow, Overcast
+  - Most Common Condition:  Clear
+  - Least Common Condition: Heavy Rain
 
 ----------------------------------------------------------------------
 3. MACHINE LEARNING RESULTS & PERFORMANCE
 ----------------------------------------------------------------------
 Model Type: Linear Regression
-Target Variable: temp
-Features Used: precip, precipprob, precipcover, snow, snowdepth, windgust, windspeed, winddir, sealevelpressure, cloudcover, visibility, solarradiation, solarenergy, severerisk, moonphase
-Train/Test Samples: 584 / 147
+Target Variable: temperature
+Features Used: precipitation, windspeed, pressure
+Train/Test Samples: 292 / 73
 
 Model Coefficients:
-  - precip: 0.0249
-  - precipprob: -0.0064
-  - precipcover: 0.0584
-  - snow: -0.3882
-  - snowdepth: -1.9296
-  - windgust: -0.0850
-  - windspeed: -0.2832
-  - winddir: -0.0090
-  - sealevelpressure: -0.7680
-  - cloudcover: 0.0496
-  - visibility: 0.1222
-  - solarradiation: 0.0473
-  - solarenergy: -0.1196
-  - severerisk: 0.0640
-  - moonphase: -1.0229
-  - Intercept: 790.6059
+  - precipitation: -0.1527
+  - windspeed: -0.4109
+  - pressure: -0.0589
+  - Intercept: 72.8557
 
 Evaluation Metrics on Test Set:
-  - Mean Absolute Error (MAE):     4.1071 °C
-  - Mean Squared Error (MSE):      27.5747
-  - Root Mean Squared Error (RMSE): 5.2512 °C
-  - R² Score (R-squared):           0.7698
+  - Mean Absolute Error (MAE):     6.4301 °C
+  - Mean Squared Error (MSE):      56.8383
+  - Root Mean Squared Error (RMSE): 7.5391 °C
+  - R² Score (R-squared):           -0.0293
